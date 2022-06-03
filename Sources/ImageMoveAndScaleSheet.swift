@@ -207,7 +207,7 @@ struct ImageMoveAndScaleSheet: View {
 
     func HoleRectShapeMask() -> Path {
         let rect = CGRect(x: 0, y: 0, width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
-        let insetRect = CGRect(x: inset, y: inset, width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.width)
+        let insetRect = CGRect(x: 0, y: (UIScreen.main.bounds.height-UIScreen.main.bounds.width)/2, width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.width)
         var shape = Rectangle().path(in: rect)
         shape.addPath(Rectangle().path(in: insetRect))
         return shape
