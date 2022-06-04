@@ -15,6 +15,8 @@ struct ImageMoveAndScaleSheet: View {
     @StateObject var orientation = DeviceOrientation()
     
     @StateObject var viewModel: ImageMoveAndScaleSheet.ViewModel
+
+    @State private var isShowingImagePicker = false
     
     var imageAttributes: ImageAttributes
     
@@ -22,7 +24,13 @@ struct ImageMoveAndScaleSheet: View {
         _viewModel = StateObject(wrappedValue: viewModel)
         self.imageAttributes = imageAttributes
     }
-    @State private var isShowingImagePicker = false
+
+
+    init(viewModel: ViewModel = .init(), imageAttributes: ImageAttributes, isShowingImagePicker: Bool) {
+        _viewModel = StateObject(wrappedValue: viewModel)
+        self.imageAttributes = imageAttributes
+        self.isShowingImagePicker = isShowingImagePicker
+    }
     
     @State var originalZoom: CGFloat?
     

@@ -72,7 +72,7 @@ public struct ImagePane: View {
             }
         }
         .fullScreenCover(isPresented: $isShowingPhotoSelectionSheet) {
-            ImageMoveAndScaleSheet(imageAttributes: imageAttributes)
+            ImageMoveAndScaleSheet(imageAttributes: imageAttributes, isShowingImagePicker: true)
         }
     }
     
