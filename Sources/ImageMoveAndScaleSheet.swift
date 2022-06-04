@@ -16,7 +16,7 @@ struct ImageMoveAndScaleSheet: View {
     
     @StateObject var viewModel: ImageMoveAndScaleSheet.ViewModel
 
-    @State private var isShowingImagePicker = false
+    @State private var isShowingImagePicker = true
     
     var imageAttributes: ImageAttributes
     
@@ -63,6 +63,26 @@ struct ImageMoveAndScaleSheet: View {
     @State var horizontalOffset: CGFloat = 0.0
     @State var verticalOffset: CGFloat = 0.0
     
+    var minZoom: CGFloat {
+        get {
+            let inputImageWidth = inputImage?.size.width ?? 0.0
+            let inputImageHeight = inputImage?.size.height ?? 0.0
+            
+            let screenWidth = UIScreen.main.bounds.width
+            
+            if inputImage == nil
+            {
+                return 1.0
+            }
+            
+            if inputImageWidth > inputImageHeight {
+                return inputImageWidth / inputImageHeight * (screenWidth - 2*inset)/screenWidth
+            } else {
+                return inputImageHeight/inputImageWidth * (screenWidth - 2*inset)/screenWidth
+            }
+        }
+    }
+    
     //Local variables
     
     ///A CGFloat used to "pad" the circle set into the view.
@@ -79,125 +99,133 @@ struct ImageMoveAndScaleSheet: View {
     let selectPhoto = NSLocalizedString("Select a photo by tapping the icon below", comment: "indicate that the user may select a photo by tapping on the green icon")
     let cancelSheet = NSLocalizedString("Cancel", comment: "indicate that the user cancel the action, closing the sheet")
     let usePhoto = NSLocalizedString("Use photo", comment: "indicate that the user may use the photo as currently displayed")
+    
+    
 
     var body: some View {
-        
         ZStack {
-            ZStack {
-                Color.black.opacity(0.8)
-                if viewModel.originalImage != nil {
-                    Image(uiImage: viewModel.originalImage!)
-                        .resizable()
-                        .scaleEffect(zoomAmount + currentAmount)
-                        .scaledToFill()
-                        .aspectRatio(contentMode: .fit)
-                        .offset(x: self.currentPosition.width, y: self.currentPosition.height)
-                        .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
-                        .clipped()
-                } else {
-                    viewModel.image
-                        .resizable()
-                        .scaledToFill()
-                        .aspectRatio(contentMode: .fit)
-                        .foregroundColor(Color(.systemGray2))
-                        ///Padding is added if the default image is from the asset catalogue.
-                        ///See line 45 in ImageAttributes.swift.
-                        .padding(inset * 2)
+            SystemUIImagePicker(
+                image: self.$inputImage,
+                onFinish: {
+                    self.isShowingImagePicker.toggle()
+                    loadImage()
+                    self.zoomAmount = minZoom
+                    repositionImage()
+                },
+                onDismiss: {
+                    self.presentationMode.wrappedValue.dismiss()
                 }
-            }
+            )
+            .accentColor(Color.systemRed)
+            .opacity(isShowingImagePicker ? 1 : 0)
             
-            Rectangle()
-                .fill(Color.black).opacity(0.55)
-                .mask(HoleRectShapeMask().fill(style: FillStyle(eoFill: true)))
+            
+            ZStack {
+                ZStack {
+                    Color.black.opacity(0.8)
+                    if viewModel.originalImage != nil {
+                        Image(uiImage: viewModel.originalImage!)
+                            .resizable()
+                            .scaleEffect(zoomAmount + currentAmount)
+                            .scaledToFit()
+                            .offset(x: self.currentPosition.width, y: self.currentPosition.height)
+                            .frame(width: UIScreen.main.bounds.width, height:  UIScreen.main.bounds.height)
+                            .clipped()
+                    } else {
+                        viewModel.image
+                            .resizable()
+                            .scaledToFit()
+                            .foregroundColor(Color(.systemGray2))
+                            ///Padding is added if the default image is from the asset catalogue.
+                            ///See line 45 in ImageAttributes.swift.
+                            .padding(inset * 2)
+                    }
+                }
+                
+                Rectangle()
+                    .fill(Color.black).opacity(0.55)
+                    .mask(HoleRectShapeMask().fill(style: FillStyle(eoFill: true)))
 
-            VStack {
-                Text((viewModel.originalImage != nil) ? viewModel.moveAndScale : viewModel.selectPhoto )
-                    .foregroundColor(.white)
-                    .padding(.top, 50)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .opacity((orientation.orientation == .portrait) ? 1.0 : 0.0)
-                    
-                Spacer()
-                HStack{
-                    ZStack {
-                        HStack {
-                            cancelButton
-                            Spacer()
-                            if orientation.orientation == .landscape {
-                                openSystemPickerButton
-                                    .padding(.trailing, 20)
-                            }
-                            saveButton
-                        }
-                        .padding(.horizontal)
+                VStack {
+                    Text((viewModel.originalImage != nil) ? viewModel.moveAndScale : viewModel.selectPhoto )
                         .foregroundColor(.white)
-                        if orientation.orientation == .portrait {
-                            openSystemPickerButton
+                        .padding(.top, 50)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .opacity((orientation.orientation == .portrait) ? 1.0 : 0.0)
+                    
+                    Spacer()
+                    HStack{
+                        ZStack {
+                            HStack {
+                                cancelButton
+                                Spacer()
+                                if orientation.orientation == .landscape {
+                                    openSystemPickerButton
+                                        .padding(.trailing, 20)
+                                }
+                                saveButton
+                            }
+                            .padding(.horizontal)
+                            .foregroundColor(.white)
+                            if orientation.orientation == .portrait {
+                                openSystemPickerButton
+                            }
                         }
                     }
                 }
+                .padding(.bottom, (orientation.orientation == .portrait) ? 20 : 4)
             }
-            .padding(.bottom, (orientation.orientation == .portrait) ? 20 : 4)
-        }
-        .edgesIgnoringSafeArea(.all)
-        .onAppear(perform: {
-            viewModel.loadImageAttributes(imageAttributes)
-        })
-        
-        //MARK: - Gestures
-        
-        .gesture(
-            MagnificationGesture()
-                .onChanged { amount in
-                    self.currentAmount = amount - 1
-                }
-                .onEnded { amount in
-                    self.zoomAmount += self.currentAmount
-                    if zoomAmount > 4.0 {
+            .edgesIgnoringSafeArea(.all)
+            .onAppear(perform: {
+                viewModel.loadImageAttributes(imageAttributes)
+            })
+            
+            //MARK: - Gestures
+            
+            .gesture(
+                MagnificationGesture()
+                    .onChanged { amount in
+                        self.currentAmount = amount - 1
+                    }
+                    .onEnded { amount in
+                        self.zoomAmount += self.currentAmount
+                        if zoomAmount > 4.0 {
+                            withAnimation {
+                                zoomAmount = 4.0
+                            }
+                        }
+                        
+                        if zoomAmount < minZoom {
+                            withAnimation {
+                                zoomAmount = minZoom
+                            }
+                        }
+                        self.currentAmount = 0
                         withAnimation {
-                            zoomAmount = 4.0
+                            repositionImage()
                         }
                     }
-                    self.currentAmount = 0
-                    withAnimation {
-                        repositionImage()
+            )
+            .simultaneousGesture(
+                DragGesture()
+                    .onChanged { value in
+                        self.currentPosition = CGSize(width: value.translation.width + self.newPosition.width, height: value.translation.height + self.newPosition.height)
                     }
-                }
-        )
-        .simultaneousGesture(
-            DragGesture()
-                .onChanged { value in
-                    self.currentPosition = CGSize(width: value.translation.width + self.newPosition.width, height: value.translation.height + self.newPosition.height)
-                }
-                .onEnded { value in
-                    self.currentPosition = CGSize(width: value.translation.width + self.newPosition.width, height: value.translation.height + self.newPosition.height)
-                    self.newPosition = self.currentPosition
-                    withAnimation {
-                        repositionImage()
+                    .onEnded { value in
+                        self.currentPosition = CGSize(width: value.translation.width + self.newPosition.width, height: value.translation.height + self.newPosition.height)
+                        self.newPosition = self.currentPosition
+                        withAnimation {
+                            repositionImage()
+                        }
                     }
-                }
-        )
-        .simultaneousGesture(
-            TapGesture(count: 2)
-                .onEnded(  { resetImageOriginAndScale() } )
-        )
-        .sheet(isPresented: $isShowingImagePicker, onDismiss: loadImage) {
-
-            ///Choose which system picker you want to use.
-            ///In our experience, the PHPicker "Cancel" button may not work.
-            ///Also, the PHPicker seems to result in many, many memory leaks. YMMV.
-
-            ///Uncomment these two lines to use the PHPicker.
-//            SystemPHPicker(image: self.$inputImage)
-//                .accentColor(Color.systemRed)
-
-            ///Uncomment the two lines below to use the old UIIMagePicker
-            ///This picker also results in some leaks, but as far as we can tell
-            ///far fewer than the PHPicker.
-            SystemUIImagePicker(image: self.$inputImage)
-                .accentColor(Color.systemRed)
+            )
+            .simultaneousGesture(
+                TapGesture(count: 2)
+                    .onEnded(  { resetImageOriginAndScale() } )
+            )
+            .onAppear(perform: setCurrentImage )
+            .opacity(isShowingImagePicker ? 0 : 1)
         }
-        .onAppear(perform: setCurrentImage )
     }
     
     ///Sets the mask to darken the background of the displayImage.
@@ -215,7 +243,7 @@ struct ImageMoveAndScaleSheet: View {
 
     func HoleRectShapeMask() -> Path {
         let rect = CGRect(x: 0, y: 0, width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
-        let insetRect = CGRect(x: 0, y: (UIScreen.main.bounds.height-UIScreen.main.bounds.width)/2, width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.width)
+        let insetRect = CGRect(x: inset, y: (UIScreen.main.bounds.height-UIScreen.main.bounds.width)/2 + inset, width: UIScreen.main.bounds.width - ( inset * 2 ), height: UIScreen.main.bounds.width - ( inset * 2))
         var shape = Rectangle().path(in: rect)
         shape.addPath(Rectangle().path(in: insetRect))
         return shape

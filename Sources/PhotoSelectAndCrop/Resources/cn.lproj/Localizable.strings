@@ -1,0 +1,17 @@
+
+/*
+  Localizable.strings
+  PhotoSelectAndCrop
+
+  Created by joky on 04/06/22.
+  
+*/
+
+"Select a photo by tapping the icon below" = "点击下方图标选择图片";
+"Change photo" = "重新选择";
+"Add photo" = "添加图片";
+"Cancel" = "取消";
+"Move and Scale" = "移动和缩放";
+"Use photo" = "使用该图片";
+"Edit" = "编辑";
+"Save" = "保存";

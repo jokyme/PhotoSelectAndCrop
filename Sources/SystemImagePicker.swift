@@ -16,6 +16,8 @@ public struct SystemUIImagePicker: UIViewControllerRepresentable {
     
     @Environment(\.presentationMode) var presentationMode
     @Binding var image: UIImage?
+    var onFinish: (() -> Void)
+    var onDismiss: (() -> Void)
     
     public class Coordinator: NSObject, UINavigationControllerDelegate, UIImagePickerControllerDelegate {
         let parent: SystemUIImagePicker
@@ -27,8 +29,11 @@ public struct SystemUIImagePicker: UIViewControllerRepresentable {
         public func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
             if let uiImage = info[.originalImage] as? UIImage {
                 parent.image = uiImage
+                parent.onFinish()
+            } else {
+                parent.onDismiss()
+                // parent.presentationMode.wrappedValue.dismiss()
             }
-            parent.presentationMode.wrappedValue.dismiss()
         }
     }
 

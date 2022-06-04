@@ -5,7 +5,7 @@ import PackageDescription
 
 let package = Package(
     name: "PhotoSelectAndCrop",
-    defaultLocalization: "en",
+    defaultLocalization: "cn",
     platforms: [
         .iOS("15.0")
     ],
